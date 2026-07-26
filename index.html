@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🧴 護膚品庫存</title>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js">
@@ -41,7 +40,6 @@
             flex-wrap: wrap;
         }
 
-        /* Login page - 預設隱藏，由 JavaScript 控制 */
         #loginPage {
             display: none;
             max-width: 400px;
@@ -975,37 +973,6 @@
             margin-top: 8px;
         }
 
-        /* Fix: 品牌輸入 - 直接用文字輸入，唔使揀選 */
-        .brand-input-simple {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .brand-input-simple input {
-            flex: 1;
-            padding: 10px 14px;
-            border: 1px solid #d5dbdb;
-            border-radius: 12px;
-            font-size: 14px;
-            outline: none;
-        }
-        .brand-input-simple input:focus {
-            border-color: #1a252f;
-        }
-        .brand-input-simple button {
-            padding: 10px 16px;
-            background: #1a252f;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .brand-input-simple button:hover {
-            background: #2c3e50;
-        }
-
         .select-with-add {
             display: flex;
             gap: 8px;
@@ -1024,6 +991,37 @@
             white-space: nowrap;
         }
         .select-with-add .add-option-btn:hover {
+            background: #d5dbdb;
+        }
+
+        /* 品牌輸入 + 新增 */
+        .brand-select-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .brand-select-wrapper select {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #d5dbdb;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+        }
+        .brand-select-wrapper select:focus {
+            border-color: #1a252f;
+        }
+        .brand-select-wrapper .brand-add-btn {
+            padding: 8px 14px;
+            background: #e8edf0;
+            border: 1px solid #d5dbdb;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .brand-select-wrapper .brand-add-btn:hover {
             background: #d5dbdb;
         }
 
@@ -1281,6 +1279,7 @@
         </div>
     </div>
 
+    <!-- ===== STOCK MODAL ===== -->
     <div class="modal-overlay hidden" id="stockModal">
         <div class="modal">
             <h3 id="stockModalTitle">📦 新增存貨</h3>
@@ -1288,10 +1287,9 @@
             <input type="text" id="sName" placeholder="例如：精華液" />
 
             <label>品牌</label>
-            <!-- Fix: 品牌直接用文字輸入 + 新增按鈕 -->
-            <div class="brand-input-simple" id="sBrandWrapper">
-                <input type="text" id="sBrandInput" placeholder="輸入品牌名稱（可選）" />
-                <button id="sBrandAddBtn">➕ 新增</button>
+            <div class="brand-select-wrapper">
+                <select id="sBrandSelect"><option value="">（冇品牌）</option></select>
+                <button class="brand-add-btn" id="sBrandAddBtn">＋</button>
             </div>
 
             <div class="row-2">
@@ -1321,6 +1319,7 @@
         </div>
     </div>
 
+    <!-- ===== SHOPPING ITEM MODAL ===== -->
     <div class="modal-overlay hidden" id="shoppingItemModal">
         <div class="modal">
             <h3 id="shoppingItemModalTitle">🛒 購物清單項目</h3>
@@ -1328,9 +1327,9 @@
             <input type="text" id="shName" placeholder="例如：洗面膏" />
 
             <label>品牌</label>
-            <div class="brand-input-simple" id="shBrandWrapper">
-                <input type="text" id="shBrandInput" placeholder="輸入品牌名稱（可選）" />
-                <button id="shBrandAddBtn">➕ 新增</button>
+            <div class="brand-select-wrapper">
+                <select id="shBrandSelect"><option value="">（冇品牌）</option></select>
+                <button class="brand-add-btn" id="shBrandAddBtn">＋</button>
             </div>
 
             <label>數量</label>
@@ -1356,6 +1355,7 @@
         </div>
     </div>
 
+    <!-- ===== QUICK ADD MODAL ===== -->
     <div class="modal-overlay hidden" id="quickAddModal">
         <div class="modal">
             <h3>⚡ 快速加入購物清單</h3>
@@ -1384,6 +1384,7 @@
         </div>
     </div>
 
+    <!-- ===== DETAIL MODAL ===== -->
     <div class="modal-overlay hidden" id="detailModal">
         <div class="modal">
             <h3>📄 詳細資料</h3>
@@ -1395,6 +1396,7 @@
         </div>
     </div>
 
+    <!-- ===== BOUGHT CONFIRM MODAL ===== -->
     <div class="modal-overlay hidden" id="boughtModal">
         <div class="modal">
             <h3>✅ 買咗！</h3>
@@ -1403,6 +1405,7 @@
         </div>
     </div>
 
+    <!-- ===== TAG MANAGER MODAL ===== -->
     <div class="modal-overlay hidden" id="tagManagerModal">
         <div class="modal" style="max-width:700px;">
             <h3>🏷️ 分類標籤管理 <button class="close-btn" id="tagManagerCloseBtn" style="padding:4px 16px;border:none;border-radius:12px;background:#e8edf0;cursor:pointer;float:right;font-size:14px;">✕ 關閉</button></h3>
@@ -1593,9 +1596,6 @@
         // 🔐 登入系統
         // ============================================================
 
-        // Fix: Login page 預設 hidden，由 JavaScript 控制顯示
-        // 一開始 loginPage 係 display:none，如果冇 login 紀錄先顯示
-
         function loadDataFromFirebase(callback) {
             if (!currentRoom || !database) {
                 if (callback) callback(false);
@@ -1725,13 +1725,12 @@
         });
 
         // ============================================================
-        // 🔧 重新登入檢查 (Fix: Login page 唔會閃)
+        // 🔧 重新登入檢查
         // ============================================================
 
         const savedRoom = localStorage.getItem('skincare_room');
         const loggedIn = localStorage.getItem('skincare_logged_in');
 
-        // 如果已經 Login，直接入 App
         if (loggedIn === 'true' && savedRoom && database) {
             const testRef = database.ref('test/' + savedRoom);
             testRef.set({ test: 'relogin', time: Date.now() }).then(() => {
@@ -1742,12 +1741,11 @@
                 showLoginPage();
             });
         } else {
-            // 未 Login，顯示 Login 頁面
             showLoginPage();
         }
 
         // ============================================================
-        // 📦 Populate Selects (Fix: 品牌直接用文字輸入)
+        // 📦 Populate Selects
         // ============================================================
 
         function populateSelects() {
@@ -1786,6 +1784,27 @@
                 if (currentVal && locations.includes(currentVal)) locSelect.value = currentVal;
                 else if (locations.length > 0) locSelect.value = locations[0];
             }
+
+            // 品牌
+            updateBrandSelects();
+        }
+
+        function updateBrandSelects() {
+            const selects = ['sBrandSelect', 'shBrandSelect'];
+            selects.forEach(id => {
+                const sel = $(id);
+                if (!sel) return;
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">（冇品牌）</option>';
+                const sorted = sortBrands(brands);
+                sorted.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.textContent = b;
+                    sel.appendChild(opt);
+                });
+                if (currentVal && brands.includes(currentVal)) sel.value = currentVal;
+            });
         }
 
         function updateSubcategorySelects() {
@@ -1806,27 +1825,6 @@
             }
             if (currentVal && subSelect.querySelector(`option[value="${currentVal}"]`)) subSelect.value =
             currentVal;
-        }
-
-        // Fix: 品牌新增按鈕
-        function setupBrandInput(wrapperId, inputId, btnId) {
-            const input = $(inputId);
-            const btn = $(btnId);
-            if (!input || !btn) return;
-
-            btn.addEventListener('click', function() {
-                const newBrand = input.value.trim();
-                if (!newBrand) { showToast('請輸入品牌名稱'); return; }
-                if (brands.includes(newBrand)) { showToast('品牌已存在'); return; }
-                brands.push(newBrand);
-                saveToFirebase();
-                input.value = '';
-                showToast('✅ 已加入品牌：' + newBrand);
-            });
-
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') btn.click();
-            });
         }
 
         // ============================================================
@@ -1926,7 +1924,6 @@
             });
             container.innerHTML = html;
 
-            // 綁定事件
             container.querySelectorAll('.qty-btn-minus').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2336,6 +2333,86 @@
                         showToast('🗑️ 已刪除類別：' + cat);
                     });
                 });
+            } else if (tab === 'brands') {
+                const sorted = sortBrands(brands);
+                html = `<div style="margin-bottom:8px;font-weight:600;">🏷️ 品牌（共 ${sorted.length} 個）</div>`;
+                sorted.forEach((b, idx) => {
+                    const count = allItems.filter(i => i.brand === b).length;
+                    html += `
+                                <div class="tag-item-row">
+                                    <span class="order-num">${idx + 1}</span>
+                                    <span class="tag-name">${b} <span style="font-size:12px;color:#94a3b8;">(${count} 件物品)</span></span>
+                                    <div class="tag-actions">
+                                        <button class="edit-tag-btn" data-action="rename-brand" data-name="${b}">✏️</button>
+                                        <button class="del-tag-btn" data-action="delete-brand" data-name="${b}">🗑️</button>
+                                    </div>
+                                </div>
+                            `;
+                });
+                html += `
+                            <div class="tag-add-row">
+                                <input type="text" id="newBrandInput" placeholder="輸入新品牌名稱..." />
+                                <button id="addBrandBtn">＋ 新增</button>
+                            </div>
+                        `;
+                container.innerHTML = html;
+
+                container.querySelector('#addBrandBtn').addEventListener('click', function() {
+                    const input = container.querySelector('#newBrandInput');
+                    const val = input.value.trim();
+                    if (!val) { showToast('請輸入品牌名稱'); return; }
+                    if (brands.includes(val)) { showToast('品牌已存在'); return; }
+                    brands.push(val);
+                    saveToFirebase();
+                    updateBrandSelects();
+                    renderTagManager('brands');
+                    showToast('✅ 已加入品牌：' + val);
+                });
+                container.querySelector('#newBrandInput').addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') container.querySelector('#addBrandBtn').click();
+                });
+
+                container.querySelectorAll('[data-action="rename-brand"]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const oldName = this.dataset.name;
+                        const newName = prompt('將「' + oldName + '」改名為：', oldName);
+                        if (newName === null) return;
+                        const trimmed = newName.trim();
+                        if (!trimmed) { showToast('名稱不能為空'); return; }
+                        if (trimmed === oldName) return;
+                        if (brands.includes(trimmed)) { showToast('品牌已存在'); return; }
+                        const idx = brands.indexOf(oldName);
+                        if (idx !== -1) brands[idx] = trimmed;
+                        allItems.forEach(item => {
+                            if (item.brand === oldName) item.brand = trimmed;
+                        });
+                        saveToFirebase();
+                        updateBrandSelects();
+                        renderTagManager('brands');
+                        renderAll();
+                        showToast('✅ 已改名：' + oldName + ' → ' + trimmed);
+                    });
+                });
+
+                container.querySelectorAll('[data-action="delete-brand"]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const b = this.dataset.name;
+                        const count = allItems.filter(i => i.brand === b).length;
+                        if (count > 0 && !confirm('品牌「' + b + '」有 ' + count +
+                                ' 件物品，刪除後會變空白。確定？')) return;
+                        if (count === 0 && !confirm('確定刪除品牌「' + b + '」？')) return;
+                        const idx = brands.indexOf(b);
+                        if (idx !== -1) brands.splice(idx, 1);
+                        allItems.forEach(item => {
+                            if (item.brand === b) item.brand = '';
+                        });
+                        saveToFirebase();
+                        updateBrandSelects();
+                        renderTagManager('brands');
+                        renderAll();
+                        showToast('🗑️ 已刪除品牌：' + b);
+                    });
+                });
             } else {
                 container.innerHTML = '<div style="padding:16px;color:#94a3b8;">其他分類管理功能開發中...</div>';
             }
@@ -2478,7 +2555,7 @@
             $('stockModalTitle').textContent = '📦 新增存貨';
             populateSelects();
             $('sName').value = '';
-            $('sBrandInput').value = '';
+            $('sBrandSelect').value = '';
             const defaultCat = currentCategory !== '全部' && categories[currentCategory] ? currentCategory :
                 (Object.keys(categories).length > 0 ? Object.keys(categories)[0] : '');
             $('sCategory').value = defaultCat;
@@ -2490,8 +2567,6 @@
             $('sNeedBuy').checked = false;
             $('sBuyQty').value = 0;
             $('stockModal').classList.remove('hidden');
-            // Setup brand input
-            setupBrandInput('sBrandWrapper', 'sBrandInput', 'sBrandAddBtn');
         });
 
         $('pickShoppingType').addEventListener('click', function() {
@@ -2504,7 +2579,7 @@
             $('stockModalTitle').textContent = '✏️ 編輯存貨';
             populateSelects();
             $('sName').value = item.name || '';
-            $('sBrandInput').value = item.brand || '';
+            $('sBrandSelect').value = item.brand || '';
             $('sCategory').value = item.category || (Object.keys(categories).length > 0 ? Object.keys(
                 categories)[0] : '');
             const subSelect = $('sSubcategory');
@@ -2515,7 +2590,6 @@
             $('sNeedBuy').checked = item.needBuy || false;
             $('sBuyQty').value = item.buyQty || 0;
             $('stockModal').classList.remove('hidden');
-            setupBrandInput('sBrandWrapper', 'sBrandInput', 'sBrandAddBtn');
         }
 
         $('stockCancelBtn').addEventListener('click', function() {
@@ -2528,7 +2602,7 @@
         $('stockSaveBtn').addEventListener('click', function() {
             const name = $('sName').value.trim();
             if (!name) { showToast('請輸入物品名稱'); return; }
-            const brand = $('sBrandInput').value.trim();
+            const brand = $('sBrandSelect').value;
             if (brand && !brands.includes(brand)) {
                 brands.push(brand);
             }
@@ -2561,13 +2635,17 @@
             showToast(editingId ? '✅ 已更新' : '✅ 已新增');
         });
 
+        // ============================================================
+        // 🛒 購物清單 Modal
+        // ============================================================
+
         function openShoppingItemModal(item) {
             const isEdit = !!item;
             $('shoppingItemModalTitle').textContent = isEdit ? '✏️ 編輯購物清單項目' : '🛒 新增購物清單項目';
             populateSelects();
             if (isEdit) {
                 $('shName').value = item.name || '';
-                $('shBrandInput').value = item.brand || '';
+                $('shBrandSelect').value = item.brand || '';
                 $('shQty').value = item.qty || 1;
                 const tag = item.tag || 'none';
                 document.querySelectorAll('input[name="shTag"]').forEach(r => r.checked = r.value === tag);
@@ -2578,7 +2656,7 @@
                 editingId = item.id;
             } else {
                 $('shName').value = '';
-                $('shBrandInput').value = '';
+                $('shBrandSelect').value = '';
                 $('shQty').value = 1;
                 document.querySelectorAll('input[name="shTag"]').forEach(r => r.checked = r.value ===
                 'none');
@@ -2589,7 +2667,6 @@
                 editingId = null;
             }
             $('shoppingItemModal').classList.remove('hidden');
-            setupBrandInput('shBrandWrapper', 'shBrandInput', 'shBrandAddBtn');
         }
 
         $('shoppingItemCancelBtn').addEventListener('click', function() {
@@ -2602,7 +2679,7 @@
         $('shoppingItemSaveBtn').addEventListener('click', function() {
             const name = $('shName').value.trim();
             if (!name) { showToast('請輸入物品名稱'); return; }
-            const brand = $('shBrandInput').value.trim();
+            const brand = $('shBrandSelect').value;
             if (brand && !brands.includes(brand)) {
                 brands.push(brand);
             }
@@ -2630,6 +2707,10 @@
             renderAll();
             showToast(editingId ? '✅ 已更新' : '✅ 已新增');
         });
+
+        // ============================================================
+        // ⚡ 快速加入
+        // ============================================================
 
         $('quickAddBtn').addEventListener('click', function() {
             $('qName').value = '';
@@ -2850,7 +2931,91 @@
             }
         });
 
-        console.log('🧴 護膚品庫存 App (Fix Login Flash + Brand Input) 已啟動！');
+        // ============================================================
+        // 🏷️ 品牌 + 類別新增按鈕
+        // ============================================================
+
+        // 品牌新增
+        document.querySelectorAll('.brand-add-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const wrapper = this.parentElement;
+                const select = wrapper.querySelector('select');
+                if (!select) return;
+                const newBrand = prompt('輸入新品牌名稱：');
+                if (!newBrand || !newBrand.trim()) return;
+                const trimmed = newBrand.trim();
+                if (brands.includes(trimmed)) { showToast('品牌已存在'); return; }
+                brands.push(trimmed);
+                saveToFirebase();
+                updateBrandSelects();
+                select.value = trimmed;
+                showToast('✅ 已加入品牌：' + trimmed);
+            });
+        });
+
+        // 類別/子類別/位置 新增
+        document.querySelectorAll('.add-option-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const target = this.dataset.target;
+                const type = this.dataset.type || 'category';
+                const select = $(target);
+                if (!select) return;
+
+                let promptMsg = '';
+                if (type === 'category') promptMsg = '輸入新類別名稱：';
+                else if (type === 'subcategory') promptMsg = '輸入新子類別名稱：';
+                else if (type === 'location') promptMsg = '輸入新存放位置：';
+                else promptMsg = '輸入新名稱：';
+
+                const newVal = prompt(promptMsg);
+                if (newVal === null) return;
+                const trimmed = newVal.trim();
+                if (!trimmed) { showToast('請輸入名稱'); return; }
+
+                if (type === 'category') {
+                    if (categories[trimmed]) { showToast('類別已存在'); return; }
+                    categories[trimmed] = { sub: [], subOrder: [], order: Object.keys(categories).length +
+                            1 };
+                    saveToFirebase();
+                    populateSelects();
+                    renderFilterBar();
+                    showToast('✅ 已加入類別：' + trimmed);
+                } else if (type === 'subcategory') {
+                    const parentCat = target === 'sSubcategory' ? $('sCategory').value : $('rCategory')
+                        .value;
+                    if (!parentCat || !categories[parentCat]) { showToast('請先選擇類別'); return; }
+                    if (categories[parentCat].sub && categories[parentCat].sub.includes(trimmed)) {
+                        showToast('子類別已存在');
+                        return;
+                    }
+                    if (!categories[parentCat].sub) categories[parentCat].sub = [];
+                    if (!categories[parentCat].subOrder) categories[parentCat].subOrder = [];
+                    categories[parentCat].sub.push(trimmed);
+                    categories[parentCat].subOrder.push(trimmed);
+                    saveToFirebase();
+                    updateSubcategorySelects();
+                    // 自動揀返新加嘅子類別
+                    const subSelect = $(target);
+                    if (subSelect) {
+                        const opt = document.createElement('option');
+                        opt.value = trimmed;
+                        opt.textContent = trimmed;
+                        subSelect.appendChild(opt);
+                        subSelect.value = trimmed;
+                    }
+                    showToast('✅ 已加入子類別：' + trimmed);
+                } else if (type === 'location') {
+                    if (locations.includes(trimmed)) { showToast('位置已存在'); return; }
+                    locations.push(trimmed);
+                    saveToFirebase();
+                    populateSelects();
+                    renderLocationFilterBar();
+                    showToast('✅ 已加入位置：' + trimmed);
+                }
+            });
+        });
+
+        console.log('🧴 護膚品庫存 App (Fix Brand + Category Add) 已啟動！');
         console.log('📌 請輸入代碼登入');
     </script>
 
