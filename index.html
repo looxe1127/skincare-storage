@@ -994,7 +994,6 @@
             background: #d5dbdb;
         }
 
-        /* 品牌輸入 + 新增 */
         .brand-select-wrapper {
             display: flex;
             gap: 8px;
@@ -1080,26 +1079,6 @@
             font-weight: 500;
             text-align: center;
         }
-        .tag-item-row .order-arrows {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .tag-item-row .order-arrows button {
-            width: 24px;
-            height: 18px;
-            border: none;
-            background: #e8edf0;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .tag-item-row .order-arrows button:hover {
-            background: #d5dbdb;
-        }
         .tag-item-row .tag-name {
             flex: 1;
             font-size: 14px;
@@ -1129,10 +1108,6 @@
         }
         .tag-item-row .tag-actions .del-tag-btn:hover {
             background: #fecaca;
-        }
-        .tag-item-row .tag-sub-list {
-            font-size: 12px;
-            color: #94a3b8;
         }
 
         .tag-add-row {
@@ -1279,7 +1254,6 @@
         </div>
     </div>
 
-    <!-- ===== STOCK MODAL ===== -->
     <div class="modal-overlay hidden" id="stockModal">
         <div class="modal">
             <h3 id="stockModalTitle">📦 新增存貨</h3>
@@ -1319,7 +1293,6 @@
         </div>
     </div>
 
-    <!-- ===== SHOPPING ITEM MODAL ===== -->
     <div class="modal-overlay hidden" id="shoppingItemModal">
         <div class="modal">
             <h3 id="shoppingItemModalTitle">🛒 購物清單項目</h3>
@@ -1355,7 +1328,6 @@
         </div>
     </div>
 
-    <!-- ===== QUICK ADD MODAL ===== -->
     <div class="modal-overlay hidden" id="quickAddModal">
         <div class="modal">
             <h3>⚡ 快速加入購物清單</h3>
@@ -1384,7 +1356,6 @@
         </div>
     </div>
 
-    <!-- ===== DETAIL MODAL ===== -->
     <div class="modal-overlay hidden" id="detailModal">
         <div class="modal">
             <h3>📄 詳細資料</h3>
@@ -1396,7 +1367,6 @@
         </div>
     </div>
 
-    <!-- ===== BOUGHT CONFIRM MODAL ===== -->
     <div class="modal-overlay hidden" id="boughtModal">
         <div class="modal">
             <h3>✅ 買咗！</h3>
@@ -1405,7 +1375,6 @@
         </div>
     </div>
 
-    <!-- ===== TAG MANAGER MODAL ===== -->
     <div class="modal-overlay hidden" id="tagManagerModal">
         <div class="modal" style="max-width:700px;">
             <h3>🏷️ 分類標籤管理 <button class="close-btn" id="tagManagerCloseBtn" style="padding:4px 16px;border:none;border-radius:12px;background:#e8edf0;cursor:pointer;float:right;font-size:14px;">✕ 關閉</button></h3>
@@ -1553,7 +1522,6 @@
                 changed = true; }
             if (changed) {
                 saveToFirebase();
-                showToast('🔧 已修復分類資料');
             }
         }
 
@@ -1636,7 +1604,6 @@
                 renderLocationFilterBar();
                 renderSubFilterBar();
                 populateSelects();
-                // 開始監聽
                 const ref = getRoomRef();
                 if (ref) {
                     ref.on('value', snapshot => {
@@ -1652,7 +1619,6 @@
                             renderLocationFilterBar();
                             renderSubFilterBar();
                             populateSelects();
-                            showToast('🔄 已同步');
                         }
                     });
                 }
@@ -1737,7 +1703,6 @@
                 currentRoom = savedRoom;
                 enterApp();
             }).catch(() => {
-                console.log('⚠️ 重新登入失敗，請手動登入');
                 showLoginPage();
             });
         } else {
@@ -1749,7 +1714,6 @@
         // ============================================================
 
         function populateSelects() {
-            // 類別
             const catSelect = $('sCategory');
             if (catSelect) {
                 const currentVal = catSelect.value;
@@ -1766,10 +1730,8 @@
                 currentCategory;
             }
 
-            // 子類別
             updateSubcategorySelects();
 
-            // 存放位置
             const locSelect = $('sLocation');
             if (locSelect) {
                 const currentVal = locSelect.value;
@@ -1785,7 +1747,6 @@
                 else if (locations.length > 0) locSelect.value = locations[0];
             }
 
-            // 品牌
             updateBrandSelects();
         }
 
@@ -1971,6 +1932,7 @@
                         item.needBuy = true;
                         saveToFirebase();
                         renderAll();
+                        showToast('🛒 已加入購物清單');
                     }
                 });
             });
@@ -2011,14 +1973,30 @@
         }
 
         // ============================================================
-        // 🛒 渲染購物清單
+        // 🛒 渲染購物清單（新版：包含庫存回購物品）
         // ============================================================
 
         function renderShopping() {
             const container = $('shoppingList');
             if (!container) return;
-            const shoppingItems = allItems.filter(i => i.type === 'shopping');
-            let list = [...shoppingItems];
+
+            // 1. 手動加入嘅購物清單物品
+            const manualItems = allItems.filter(i => i.type === 'shopping');
+
+            // 2. 庫存回購物品（type === 'stock' + needBuy === true）
+            const stockRestockItems = allItems
+                .filter(i => i.type === 'stock' && i.needBuy === true && i.buyQty > 0)
+                .map(i => ({
+                    ...i,
+                    _isStockRestock: true,
+                    tag: 'restock',
+                    status: 'buy'
+                }));
+
+            // 合併兩類
+            let list = [...manualItems, ...stockRestockItems];
+
+            // Filter
             if (currentShopFilter === 'recurring') {
                 list = list.filter(i => i.tag === 'recurring');
             } else if (currentShopFilter === 'restock') {
@@ -2026,6 +2004,7 @@
             } else if (currentShopFilter === 'none') {
                 list = list.filter(i => i.tag === 'none' || !i.tag);
             }
+
             const statusOrder = { 'buy': 0, 'soon': 1, 'none': 2, 'done': 3 };
             list.sort((a, b) => (statusOrder[a.status] || 2) - (statusOrder[b.status] || 2));
 
@@ -2048,7 +2027,7 @@
                     '';
 
                 html += `
-                            <div class="${cardClass}" data-id="${item.id}">
+                            <div class="${cardClass}" data-id="${item.id}" data-type="${item.type}">
                                 <div class="name-row">
                                     <span class="name">${item.name}</span>
                                     <span class="brand">${brandDisplay}</span>
@@ -2078,13 +2057,14 @@
             });
             container.innerHTML = html;
 
+            // 狀態按鈕（只適用於手動購物清單物品）
             container.querySelectorAll('.status-row button:not(.done-btn)').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const id = this.dataset.id;
                     const status = this.dataset.status;
-                    const item = allItems.find(i => i.id === id);
-                    if (item && item.type === 'shopping') {
+                    const item = allItems.find(i => i.id === id && i.type === 'shopping');
+                    if (item) {
                         item.status = status;
                         saveToFirebase();
                         renderShopping();
@@ -2093,13 +2073,16 @@
                 });
             });
 
+            // 買咗按鈕
             container.querySelectorAll('.done-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const id = this.dataset.id;
                     const action = this.dataset.action || 'done';
+
+                    // 復原
                     if (action === 'unbuy') {
-                        const item = allItems.find(i => i.id === id);
+                        const item = allItems.find(i => i.id === id && i.type === 'shopping');
                         if (item) {
                             item.status = 'none';
                             saveToFirebase();
@@ -2109,30 +2092,74 @@
                         }
                         return;
                     }
-                    const item = allItems.find(i => i.id === id);
-                    if (item) {
-                        const linkedStock = allItems.find(i => i.type === 'stock' && i.name === item
-                        .name && i.brand === item.brand);
-                        if (linkedStock) {
-                            showBoughtDialog(item, linkedStock);
+
+                    // 搵返件物品（可能係庫存或手動）
+                    const stockItem = allItems.find(i => i.type === 'stock' && i.id === id);
+                    const shoppingItem = allItems.find(i => i.type === 'shopping' && i.id === id);
+
+                    // 情況 A：庫存回購物品
+                    if (stockItem && stockItem.needBuy) {
+                        const buyQty = stockItem.buyQty || 0;
+                        if (confirm(`你買咗 ${buyQty} 件「${stockItem.name}」\n\n要唔要將呢 ${buyQty} 件加入庫存？\n\n撳「確定」= 庫存 +${buyQty}\n撳「取消」= 唔加庫存，只清空回購`)) {
+                            stockItem.qty = (stockItem.qty || 0) + buyQty;
+                            stockItem.needBuy = false;
+                            stockItem.buyQty = 0;
+                            saveToFirebase();
+                            renderAll();
+                            showToast('✅ 已加入庫存 +' + buyQty);
                         } else {
-                            showBoughtDialog(item, null);
+                            stockItem.needBuy = false;
+                            stockItem.buyQty = 0;
+                            saveToFirebase();
+                            renderAll();
+                            showToast('✅ 已標記為買咗（唔加庫存）');
                         }
+                        return;
+                    }
+
+                    // 情況 B：手動加入嘅購物清單物品
+                    if (shoppingItem) {
+                        if (confirm(`「${shoppingItem.name}」已經買咗！\n\n要唔要將佢加入庫存？`)) {
+                            shoppingItem.status = 'done';
+                            saveToFirebase();
+                            const newStock = {
+                                name: shoppingItem.name,
+                                brand: shoppingItem.brand || '',
+                                category: shoppingItem.category || Object.keys(categories)[0] || '',
+                                subcategory: shoppingItem.subcategory || '',
+                                qty: shoppingItem.qty || 1,
+                                location: locations.length > 0 ? locations[0] : '',
+                                note: shoppingItem.note || '',
+                                needBuy: false,
+                                buyQty: 0
+                            };
+                            openStockModalWithData(newStock);
+                            renderAll();
+                            showToast('📦 請填寫庫存資料');
+                        } else {
+                            shoppingItem.status = 'done';
+                            saveToFirebase();
+                            renderAll();
+                            showToast('✅ 已標記為買咗');
+                        }
+                        return;
                     }
                 });
             });
 
+            // 編輯按鈕
             container.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const id = this.dataset.id;
-                    const item = allItems.find(i => i.id === id);
+                    const item = allItems.find(i => i.id === id && i.type === 'shopping');
                     if (item) {
                         openShoppingItemModal(item);
                     }
                 });
             });
 
+            // 刪除按鈕
             container.querySelectorAll('.del-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -2150,11 +2177,15 @@
                 });
             });
 
+            // 撳卡片開 Detail
             container.querySelectorAll('.card').forEach(card => {
                 card.addEventListener('click', function(e) {
                     if (e.target.closest('button')) return;
                     const id = this.dataset.id;
-                    openDetail(id);
+                    const type = this.dataset.type;
+                    if (type === 'shopping') {
+                        openDetail(id);
+                    }
                 });
             });
         }
@@ -2218,9 +2249,11 @@
             if (totalItems) totalItems.textContent = total;
             const totalQty = $('totalQty');
             if (totalQty) totalQty.textContent = qtySum;
+            // 購物清單總數 = 手動 + 庫存回購
             const shoppingItems = allItems.filter(i => i.type === 'shopping' && i.status !== 'done');
+            const stockRestockItems = allItems.filter(i => i.type === 'stock' && i.needBuy === true && i.buyQty > 0);
             const shoppingCount = $('shoppingCount');
-            if (shoppingCount) shoppingCount.textContent = shoppingItems.length;
+            if (shoppingCount) shoppingCount.textContent = shoppingItems.length + stockRestockItems.length;
         }
 
         // ============================================================
@@ -2417,10 +2450,6 @@
                 container.innerHTML = '<div style="padding:16px;color:#94a3b8;">其他分類管理功能開發中...</div>';
             }
         }
-
-        // ============================================================
-        // 🏷️ 分類標籤管理 Modal
-        // ============================================================
 
         $('tagManageBtn').addEventListener('click', function() {
             renderTagManager('categories');
@@ -2635,10 +2664,6 @@
             showToast(editingId ? '✅ 已更新' : '✅ 已新增');
         });
 
-        // ============================================================
-        // 🛒 購物清單 Modal
-        // ============================================================
-
         function openShoppingItemModal(item) {
             const isEdit = !!item;
             $('shoppingItemModalTitle').textContent = isEdit ? '✏️ 編輯購物清單項目' : '🛒 新增購物清單項目';
@@ -2708,10 +2733,6 @@
             showToast(editingId ? '✅ 已更新' : '✅ 已新增');
         });
 
-        // ============================================================
-        // ⚡ 快速加入
-        // ============================================================
-
         $('quickAddBtn').addEventListener('click', function() {
             $('qName').value = '';
             $('qBrand').value = '';
@@ -2766,9 +2787,24 @@
             showToast('⚡ 已加入購物清單');
         });
 
-        // ============================================================
-        // 📄 詳細 Modal
-        // ============================================================
+        function openStockModalWithData(data) {
+            editingId = null;
+            $('stockModalTitle').textContent = '📦 加入庫存';
+            populateSelects();
+            $('sName').value = data.name || '';
+            $('sBrandSelect').value = data.brand || '';
+            const defaultCat = data.category || (Object.keys(categories).length > 0 ? Object.keys(
+                categories)[0] : '');
+            $('sCategory').value = defaultCat;
+            updateSubcategorySelects();
+            $('sSubcategory').value = data.subcategory || '';
+            $('sQty').value = data.qty || 1;
+            $('sLocation').value = data.location || (locations.length > 0 ? locations[0] : '');
+            $('sNote').value = data.note || '';
+            $('sNeedBuy').checked = false;
+            $('sBuyQty').value = 0;
+            $('stockModal').classList.remove('hidden');
+        }
 
         function openDetail(id) {
             const item = allItems.find(i => i.id === id);
@@ -2831,10 +2867,6 @@
             }
         });
 
-        // ============================================================
-        // 📤 匯出 / 📥 匯入
-        // ============================================================
-
         $('exportBtn').addEventListener('click', function() {
             const data = JSON.stringify({ items: allItems, categories, locations, brands }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
@@ -2878,10 +2910,6 @@
             $('fileInput').value = '';
         });
 
-        // ============================================================
-        // 🎯 Tab 切換
-        // ============================================================
-
         document.querySelectorAll('.tab-bar button').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
@@ -2911,10 +2939,6 @@
         $('searchInput').addEventListener('input', renderInventory);
         $('sortSelect').addEventListener('change', renderInventory);
 
-        // ============================================================
-        // 🚀 Keyboard shortcuts
-        // ============================================================
-
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (!$('detailModal').classList.contains('hidden')) closeDetail();
@@ -2930,10 +2954,6 @@
                     'hidden');
             }
         });
-
-        // ============================================================
-        // 🏷️ 品牌 + 類別新增按鈕
-        // ============================================================
 
         // 品牌新增
         document.querySelectorAll('.brand-add-btn').forEach(btn => {
@@ -2994,7 +3014,6 @@
                     categories[parentCat].subOrder.push(trimmed);
                     saveToFirebase();
                     updateSubcategorySelects();
-                    // 自動揀返新加嘅子類別
                     const subSelect = $(target);
                     if (subSelect) {
                         const opt = document.createElement('option');
@@ -3015,8 +3034,7 @@
             });
         });
 
-        console.log('🧴 護膚品庫存 App (Fix Brand + Category Add) 已啟動！');
-        console.log('📌 請輸入代碼登入');
+        console.log('🧴 護膚品庫存 App (加入庫存回購功能) 已啟動！');
     </script>
 
 </body>
