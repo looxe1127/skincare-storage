@@ -355,21 +355,19 @@
             background: #fffbeb;
             border-color: #fcd34d;
         }
+        /* 購物清單卡片 - 移除紅色底同紅色線，改為普通白色 */
         .card.shopping-none {
             border-left: 4px solid #d5dbdb;
         }
         .card.shopping-soon {
             border-left: 4px solid #f59e0b;
-            background: #fffbeb;
         }
         .card.shopping-buy {
-            border-left: 4px solid #dc2626;
-            background: #fef2f2;
+            /* 唔再紅色，改為普通白色 */
         }
         .card.shopping-done {
             opacity: 0.5;
             border-left: 4px solid #22c55e;
-            background: #f0fdf4;
         }
 
         .card .name-row {
@@ -429,6 +427,10 @@
             color: #16a34a;
         }
         .card .info-row .category-tag {
+            background: #e8edf0;
+            color: #4a5a6a;
+        }
+        .card .info-row .tag.custom {
             background: #e8edf0;
             color: #4a5a6a;
         }
@@ -1045,6 +1047,7 @@
             border-bottom: 1px solid #e8edf0;
             padding-bottom: 8px;
             margin-bottom: 16px;
+            flex-wrap: wrap;
         }
         .tag-manager-tabs button {
             padding: 6px 16px;
@@ -1156,6 +1159,37 @@
             text-align: center;
             font-size: 14px;
         }
+
+        .custom-tag-input {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 4px;
+        }
+        .custom-tag-input input {
+            flex: 1;
+            padding: 8px 14px;
+            border: 1px solid #d5dbdb;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+        }
+        .custom-tag-input input:focus {
+            border-color: #1a252f;
+        }
+        .custom-tag-input button {
+            padding: 8px 14px;
+            background: #1a252f;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .custom-tag-input button:hover {
+            background: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -1213,11 +1247,8 @@
 
             <div class="panel" id="panelShopping">
                 <div class="shopping-header">
-                    <div class="left">
+                    <div class="left" id="shoppingFilterBar">
                         <button class="active" data-sfilter="all">全部</button>
-                        <button data-sfilter="recurring">🔄 恆常補貨</button>
-                        <button data-sfilter="restock">📦 回購</button>
-                        <button data-sfilter="none">🏷️ 冇標籤</button>
                     </div>
                     <button class="quick-add-btn" id="quickAddBtn">⚡ 快速加入</button>
                 </div>
@@ -1307,12 +1338,14 @@
 
             <label>數量</label>
             <input type="number" id="shQty" value="1" min="1" />
-            <label>標籤（可揀）</label>
-            <div class="tag-radio-group">
-                <label><input type="radio" name="shTag" value="none" checked /> 冇標籤</label>
-                <label><input type="radio" name="shTag" value="recurring" /> 🔄 恆常補貨</label>
-                <label><input type="radio" name="shTag" value="restock" /> 📦 回購</label>
+
+            <label>標籤</label>
+            <div id="shTagPicker" class="tag-radio-group"></div>
+            <div class="custom-tag-input">
+                <input type="text" id="shNewTagInput" placeholder="輸入新標籤..." />
+                <button id="shAddTagBtn">＋ 新增</button>
             </div>
+
             <label>狀態</label>
             <div class="status-picker" id="shStatusPicker">
                 <button data-status="none" class="active">⚪ 唔使買</button>
@@ -1337,12 +1370,14 @@
             <input type="text" id="qBrand" placeholder="例如：Dr G" />
             <label>數量</label>
             <input type="number" id="qQty" value="1" min="1" />
-            <label>標籤（可揀）</label>
-            <div class="tag-radio-group">
-                <label><input type="radio" name="qTag" value="none" checked /> 冇標籤</label>
-                <label><input type="radio" name="qTag" value="recurring" /> 🔄 恆常補貨</label>
-                <label><input type="radio" name="qTag" value="restock" /> 📦 回購</label>
+
+            <label>標籤</label>
+            <div id="qTagPicker" class="tag-radio-group"></div>
+            <div class="custom-tag-input">
+                <input type="text" id="qNewTagInput" placeholder="輸入新標籤..." />
+                <button id="qAddTagBtn">＋ 新增</button>
             </div>
+
             <label>狀態</label>
             <div class="status-picker" id="qStatusPicker">
                 <button data-status="none" class="active">⚪ 唔使買</button>
@@ -1384,6 +1419,7 @@
                 <button data-tmtab="subcategories">📂 子類別</button>
                 <button data-tmtab="brands">🏷️ 品牌</button>
                 <button data-tmtab="locations">📍 存放位置</button>
+                <button data-tmtab="shoppingtags">🛒 購物標籤</button>
             </div>
             <div id="tagManagerContent"></div>
         </div>
@@ -1406,16 +1442,13 @@
             measurementId: "G-5WD0S9PRNM"
         };
 
-        // ============================================================
-        // 🚀 初始化 Firebase
-        // ============================================================
-
         let database = null;
         let currentRoom = null;
         let allItems = [];
         let categories = {};
         let locations = [];
         let brands = [];
+        let shoppingTags = [];
         let editingId = null;
         let currentCategory = '全部';
         let currentSubcategory = null;
@@ -1431,10 +1464,6 @@
         } catch (err) {
             console.error('❌ Firebase 初始化失敗:', err);
         }
-
-        // ============================================================
-        // 🔧 輔助函數
-        // ============================================================
 
         const $ = id => document.getElementById(id);
         const toast = $('toast');
@@ -1463,7 +1492,8 @@
                 items: allItems,
                 categories: categories,
                 locations: locations,
-                brands: brands
+                brands: brands,
+                shoppingTags: shoppingTags
             };
             ref.set(data).catch(err => {
                 showToast('❌ 儲存失敗：' + err.message);
@@ -1499,6 +1529,11 @@
         const DEFAULT_BRANDS = ["LINDSAY", "Kanebo Suisai", "d'Alba", "Torriden", "VT", "Fixx", "Ariul", "Clio", "Medicube",
             "Espoir", "Dr G", "Ongredients", "Daiso", "Cosnori", "Etude"
         ];
+        const DEFAULT_SHOPPING_TAGS = [
+            { value: "none", label: "冇標籤", emoji: "" },
+            { value: "recurring", label: "恆常補貨", emoji: "🔄" },
+            { value: "restock", label: "回購", emoji: "📦" }
+        ];
 
         function repairCategories() {
             let changed = false;
@@ -1520,6 +1555,10 @@
                 changed = true; }
             if (brands.length === 0) { brands = [...DEFAULT_BRANDS];
                 changed = true; }
+            if (shoppingTags.length === 0) {
+                shoppingTags = JSON.parse(JSON.stringify(DEFAULT_SHOPPING_TAGS));
+                changed = true;
+            }
             if (changed) {
                 saveToFirebase();
             }
@@ -1581,11 +1620,13 @@
                     categories = data.categories || {};
                     locations = data.locations || [];
                     brands = data.brands || [];
+                    shoppingTags = data.shoppingTags || [];
                 } else {
                     allItems = [];
                     categories = {};
                     locations = [];
                     brands = [];
+                    shoppingTags = [];
                 }
                 repairCategories();
                 if (callback) callback(true);
@@ -1603,6 +1644,7 @@
                 renderFilterBar();
                 renderLocationFilterBar();
                 renderSubFilterBar();
+                renderShoppingFilterBar();
                 populateSelects();
                 const ref = getRoomRef();
                 if (ref) {
@@ -1613,11 +1655,13 @@
                             categories = data.categories || {};
                             locations = data.locations || [];
                             brands = data.brands || [];
+                            shoppingTags = data.shoppingTags || [];
                             repairCategories();
                             renderAll();
                             renderFilterBar();
                             renderLocationFilterBar();
                             renderSubFilterBar();
+                            renderShoppingFilterBar();
                             populateSelects();
                         }
                     });
@@ -1675,11 +1719,13 @@
                             categories = {};
                             locations = [];
                             brands = [];
+                            shoppingTags = [];
                             repairCategories();
                             renderAll();
                             renderFilterBar();
                             renderLocationFilterBar();
                             renderSubFilterBar();
+                            renderShoppingFilterBar();
                             populateSelects();
                             showToast('✅ 已重置');
                         }).catch(err => {
@@ -1689,10 +1735,6 @@
                 }
             }
         });
-
-        // ============================================================
-        // 🔧 重新登入檢查
-        // ============================================================
 
         const savedRoom = localStorage.getItem('skincare_room');
         const loggedIn = localStorage.getItem('skincare_logged_in');
@@ -1748,6 +1790,7 @@
             }
 
             updateBrandSelects();
+            renderTagPickers();
         }
 
         function updateBrandSelects() {
@@ -1786,6 +1829,36 @@
             }
             if (currentVal && subSelect.querySelector(`option[value="${currentVal}"]`)) subSelect.value =
             currentVal;
+        }
+
+        // ============================================================
+        // 🏷️ 標籤 Picker
+        // ============================================================
+
+        function renderTagPickers() {
+            // 購物清單 Modal 嘅標籤 picker
+            const shPicker = $('shTagPicker');
+            if (shPicker) {
+                const currentVal = shPicker.dataset.current || 'none';
+                shPicker.innerHTML = '';
+                shoppingTags.forEach(t => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="radio" name="shTag" value="${t.value}" ${t.value === currentVal ? 'checked' : ''} /> ${t.emoji || ''} ${t.label}`;
+                    shPicker.appendChild(label);
+                });
+            }
+
+            // 快速加入 Modal 嘅標籤 picker
+            const qPicker = $('qTagPicker');
+            if (qPicker) {
+                const currentVal = qPicker.dataset.current || 'none';
+                qPicker.innerHTML = '';
+                shoppingTags.forEach(t => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="radio" name="qTag" value="${t.value}" ${t.value === currentVal ? 'checked' : ''} /> ${t.emoji || ''} ${t.label}`;
+                    qPicker.appendChild(label);
+                });
+            }
         }
 
         // ============================================================
@@ -1973,17 +2046,15 @@
         }
 
         // ============================================================
-        // 🛒 渲染購物清單（新版：包含庫存回購物品）
+        // 🛒 渲染購物清單
         // ============================================================
 
         function renderShopping() {
             const container = $('shoppingList');
             if (!container) return;
 
-            // 1. 手動加入嘅購物清單物品
             const manualItems = allItems.filter(i => i.type === 'shopping');
 
-            // 2. 庫存回購物品（type === 'stock' + needBuy === true）
             const stockRestockItems = allItems
                 .filter(i => i.type === 'stock' && i.needBuy === true && i.buyQty > 0)
                 .map(i => ({
@@ -1993,16 +2064,17 @@
                     status: 'buy'
                 }));
 
-            // 合併兩類
             let list = [...manualItems, ...stockRestockItems];
 
-            // Filter
             if (currentShopFilter === 'recurring') {
                 list = list.filter(i => i.tag === 'recurring');
             } else if (currentShopFilter === 'restock') {
                 list = list.filter(i => i.tag === 'restock');
             } else if (currentShopFilter === 'none') {
                 list = list.filter(i => i.tag === 'none' || !i.tag);
+            } else if (currentShopFilter.startsWith('custom:')) {
+                const customVal = currentShopFilter.replace('custom:', '');
+                list = list.filter(i => i.tag === customVal);
             }
 
             const statusOrder = { 'buy': 0, 'soon': 1, 'none': 2, 'done': 3 };
@@ -2016,15 +2088,21 @@
             let html = '';
             list.forEach(item => {
                 const isDone = item.status === 'done';
-                const cardClass = isDone ? 'card shopping-done' : 'card shopping-' + (item.status ||
-                'none');
+                let cardClass = 'card';
+                if (isDone) cardClass += ' shopping-done';
+                else if (item.status === 'none') cardClass += ' shopping-none';
+                else if (item.status === 'soon') cardClass += ' shopping-soon';
+                // shopping-buy 唔再加紅色
+
                 const brandDisplay = item.brand ? ` · ${item.brand}` : '';
-                const tagMap = { 'recurring': '🔄 恆常補貨', 'restock': '📦 回購', 'none': '' };
-                const tagDisplay = tagMap[item.tag] || '';
+                const tagInfo = shoppingTags.find(t => t.value === item.tag) || null;
+                const tagDisplay = tagInfo ? `${tagInfo.emoji || ''} ${tagInfo.label}` : '';
                 const statusMap = { 'none': '⚪ 唔使買', 'soon': '🟡 差唔多', 'buy': '🔴 要買', 'done': '✅ 買咗' };
                 const noteDisplay = item.note ? `<div class="note-line">📝 ${item.note}</div>` : '';
-                const categoryDisplay = item.category ? `<span class="category-tag">📂 ${item.category}</span>` :
-                    '';
+                const categoryDisplay = item.category ? `<span class="category-tag">📂 ${item.category}</span>` : '';
+
+                // 庫存回購物品先有加減掣
+                const isStockRestock = item._isStockRestock || (item.type === 'stock' && item.needBuy);
 
                 html += `
                             <div class="${cardClass}" data-id="${item.id}" data-type="${item.type}">
@@ -2034,11 +2112,19 @@
                                 </div>
                                 <div class="info-row">
                                     <span>${statusMap[item.status] || '⚪ 唔使買'}</span>
-                                    ${tagDisplay ? `<span class="tag ${item.tag === 'recurring' ? 'recurring' : 'restock'}">${tagDisplay}</span>` : ''}
+                                    ${tagDisplay ? `<span class="tag custom">${tagDisplay}</span>` : ''}
                                     ${item.qty ? `<span>✕ ${item.qty}</span>` : ''}
                                     ${categoryDisplay}
                                 </div>
                                 ${noteDisplay}
+                                ${isStockRestock ? `
+                                <div class="buy-row">
+                                    <label>想買</label>
+                                    <button class="sh-buy-btn-minus" data-id="${item.id}">−</button>
+                                    <span class="buy-num">${item.buyQty || 0}</span>
+                                    <button class="sh-buy-btn-plus" data-id="${item.id}">+</button>
+                                </div>
+                                ` : ''}
                                 ${!isDone ? `
                                 <div class="status-row">
                                     <button class="${item.status === 'none' ? 'active-status' : ''}" data-id="${item.id}" data-status="none">⚪ 唔使</button>
@@ -2056,6 +2142,34 @@
                         `;
             });
             container.innerHTML = html;
+
+            // 庫存回購物品嘅加減掣
+            container.querySelectorAll('.sh-buy-btn-minus').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    const item = allItems.find(i => i.id === id && i.type === 'stock');
+                    if (item && item.buyQty > 0) {
+                        item.buyQty--;
+                        if (item.buyQty === 0) item.needBuy = false;
+                        saveToFirebase();
+                        renderAll();
+                    }
+                });
+            });
+            container.querySelectorAll('.sh-buy-btn-plus').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    const item = allItems.find(i => i.id === id && i.type === 'stock');
+                    if (item) {
+                        item.buyQty = (item.buyQty || 0) + 1;
+                        item.needBuy = true;
+                        saveToFirebase();
+                        renderAll();
+                    }
+                });
+            });
 
             // 狀態按鈕（只適用於手動購物清單物品）
             container.querySelectorAll('.status-row button:not(.done-btn)').forEach(btn => {
@@ -2080,7 +2194,6 @@
                     const id = this.dataset.id;
                     const action = this.dataset.action || 'done';
 
-                    // 復原
                     if (action === 'unbuy') {
                         const item = allItems.find(i => i.id === id && i.type === 'shopping');
                         if (item) {
@@ -2093,7 +2206,6 @@
                         return;
                     }
 
-                    // 搵返件物品（可能係庫存或手動）
                     const stockItem = allItems.find(i => i.type === 'stock' && i.id === id);
                     const shoppingItem = allItems.find(i => i.type === 'shopping' && i.id === id);
 
@@ -2191,6 +2303,33 @@
         }
 
         // ============================================================
+        // 🏷️ 購物清單 Filter Bar（動態）
+        // ============================================================
+
+        function renderShoppingFilterBar() {
+            const container = $('shoppingFilterBar');
+            if (!container) return;
+            let html = `<button class="${currentShopFilter === 'all' ? 'active' : ''}" data-sfilter="all">全部</button>`;
+            shoppingTags.forEach(t => {
+                if (t.value === 'none') {
+                    html += `<button class="${currentShopFilter === 'none' ? 'active' : ''}" data-sfilter="none">${t.emoji || '🏷️'} 冇標籤</button>`;
+                } else {
+                    html += `<button class="${currentShopFilter === 'custom:' + t.value ? 'active' : ''}" data-sfilter="custom:${t.value}">${t.emoji || ''} ${t.label}</button>`;
+                }
+            });
+            container.innerHTML = html;
+
+            container.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentShopFilter = this.dataset.sfilter;
+                    renderShopping();
+                });
+            });
+        }
+
+        // ============================================================
         // 📊 統計
         // ============================================================
 
@@ -2222,10 +2361,6 @@
             if (locStats) locStats.innerHTML = locHtml || '<div style="color:#94a3b8;">未有位置</div>';
         }
 
-        // ============================================================
-        // 📈 Update Stats
-        // ============================================================
-
         function updateStats() {
             const stockItems = allItems.filter(i => i.type === 'stock');
             let list = stockItems;
@@ -2249,16 +2384,11 @@
             if (totalItems) totalItems.textContent = total;
             const totalQty = $('totalQty');
             if (totalQty) totalQty.textContent = qtySum;
-            // 購物清單總數 = 手動 + 庫存回購
             const shoppingItems = allItems.filter(i => i.type === 'shopping' && i.status !== 'done');
             const stockRestockItems = allItems.filter(i => i.type === 'stock' && i.needBuy === true && i.buyQty > 0);
             const shoppingCount = $('shoppingCount');
             if (shoppingCount) shoppingCount.textContent = shoppingItems.length + stockRestockItems.length;
         }
-
-        // ============================================================
-        // 🔄 Render All
-        // ============================================================
 
         function renderAll() {
             renderInventory();
@@ -2444,6 +2574,97 @@
                         renderTagManager('brands');
                         renderAll();
                         showToast('🗑️ 已刪除品牌：' + b);
+                    });
+                });
+            } else if (tab === 'shoppingtags') {
+                html = `<div style="margin-bottom:8px;font-weight:600;">🛒 購物標籤（共 ${shoppingTags.length} 個）</div>`;
+                shoppingTags.forEach((t, idx) => {
+                    const count = allItems.filter(i => i.tag === t.value).length;
+                    html += `
+                                <div class="tag-item-row">
+                                    <span class="order-num">${idx + 1}</span>
+                                    <span class="tag-name">${t.emoji || ''} ${t.label} <span style="font-size:12px;color:#94a3b8;">(${count} 件物品)</span></span>
+                                    <div class="tag-actions">
+                                        <button class="edit-tag-btn" data-action="rename-stag" data-val="${t.value}">✏️</button>
+                                        ${t.value !== 'none' && t.value !== 'recurring' && t.value !== 'restock' ?
+                                            `<button class="del-tag-btn" data-action="delete-stag" data-val="${t.value}">🗑️</button>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                });
+                html += `
+                            <div class="tag-add-row">
+                                <input type="text" id="newShopTagInput" placeholder="輸入新標籤名稱..." />
+                                <input type="text" id="newShopTagEmoji" placeholder="Emoji（可選）" style="max-width:100px;" />
+                                <button id="addShopTagBtn">＋ 新增</button>
+                            </div>
+                        `;
+                container.innerHTML = html;
+
+                container.querySelector('#addShopTagBtn').addEventListener('click', function() {
+                    const input = container.querySelector('#newShopTagInput');
+                    const emojiInput = container.querySelector('#newShopTagEmoji');
+                    const val = input.value.trim();
+                    if (!val) { showToast('請輸入標籤名稱'); return; }
+                    const value = val.toLowerCase().replace(/\s+/g, '_');
+                    if (shoppingTags.some(t => t.value === value)) { showToast('標籤已存在'); return; }
+                    shoppingTags.push({
+                        value: value,
+                        label: val,
+                        emoji: emojiInput.value.trim() || ''
+                    });
+                    saveToFirebase();
+                    renderTagManager('shoppingtags');
+                    renderShoppingFilterBar();
+                    renderTagPickers();
+                    showToast('✅ 已加入標籤：' + val);
+                });
+                container.querySelector('#newShopTagInput').addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') container.querySelector('#addShopTagBtn').click();
+                });
+
+                container.querySelectorAll('[data-action="rename-stag"]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const val = this.dataset.val;
+                        const tag = shoppingTags.find(t => t.value === val);
+                        if (!tag) return;
+                        const newName = prompt('將「' + tag.label + '」改名為：', tag.label);
+                        if (newName === null) return;
+                        const trimmed = newName.trim();
+                        if (!trimmed) { showToast('名稱不能為空'); return; }
+                        tag.label = trimmed;
+                        saveToFirebase();
+                        renderTagManager('shoppingtags');
+                        renderShoppingFilterBar();
+                        renderTagPickers();
+                        renderShopping();
+                        showToast('✅ 已改名：' + trimmed);
+                    });
+                });
+
+                container.querySelectorAll('[data-action="delete-stag"]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const val = this.dataset.val;
+                        const tag = shoppingTags.find(t => t.value === val);
+                        if (!tag) return;
+                        const count = allItems.filter(i => i.tag === val).length;
+                        if (count > 0) {
+                            if (!confirm('標籤「' + tag.label + '」有 ' + count +
+                                    ' 件物品，刪除後物品會變「冇標籤」。確定？')) return;
+                            allItems.forEach(item => {
+                                if (item.tag === val) item.tag = 'none';
+                            });
+                        } else {
+                            if (!confirm('確定刪除標籤「' + tag.label + '」？')) return;
+                        }
+                        const idx = shoppingTags.findIndex(t => t.value === val);
+                        if (idx !== -1) shoppingTags.splice(idx, 1);
+                        saveToFirebase();
+                        renderTagManager('shoppingtags');
+                        renderShoppingFilterBar();
+                        renderTagPickers();
+                        renderShopping();
+                        showToast('🗑️ 已刪除標籤：' + tag.label);
                     });
                 });
             } else {
@@ -2672,8 +2893,8 @@
                 $('shName').value = item.name || '';
                 $('shBrandSelect').value = item.brand || '';
                 $('shQty').value = item.qty || 1;
-                const tag = item.tag || 'none';
-                document.querySelectorAll('input[name="shTag"]').forEach(r => r.checked = r.value === tag);
+                $('shTagPicker').dataset.current = item.tag || 'none';
+                renderTagPickers();
                 document.querySelectorAll('#shStatusPicker button').forEach(b => {
                     b.classList.toggle('active', b.dataset.status === (item.status || 'none'));
                 });
@@ -2683,8 +2904,8 @@
                 $('shName').value = '';
                 $('shBrandSelect').value = '';
                 $('shQty').value = 1;
-                document.querySelectorAll('input[name="shTag"]').forEach(r => r.checked = r.value ===
-                'none');
+                $('shTagPicker').dataset.current = 'none';
+                renderTagPickers();
                 document.querySelectorAll('#shStatusPicker button').forEach(b => {
                     b.classList.toggle('active', b.dataset.status === 'buy');
                 });
@@ -2701,6 +2922,25 @@
             if (e.target === this) $('shoppingItemModal').classList.add('hidden');
         });
 
+        // 新增標籤按鈕
+        $('shAddTagBtn').addEventListener('click', function() {
+            const input = $('shNewTagInput');
+            const val = input.value.trim();
+            if (!val) { showToast('請輸入標籤名稱'); return; }
+            const value = val.toLowerCase().replace(/\s+/g, '_');
+            if (shoppingTags.some(t => t.value === value)) { showToast('標籤已存在'); return; }
+            shoppingTags.push({ value: value, label: val, emoji: '' });
+            saveToFirebase();
+            $('shTagPicker').dataset.current = value;
+            input.value = '';
+            renderTagPickers();
+            renderShoppingFilterBar();
+            showToast('✅ 已加入標籤：' + val);
+        });
+        $('shNewTagInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') $('shAddTagBtn').click();
+        });
+
         $('shoppingItemSaveBtn').addEventListener('click', function() {
             const name = $('shName').value.trim();
             if (!name) { showToast('請輸入物品名稱'); return; }
@@ -2708,7 +2948,8 @@
             if (brand && !brands.includes(brand)) {
                 brands.push(brand);
             }
-            const tag = document.querySelector('input[name="shTag"]:checked')?.value || 'none';
+            const tagEl = document.querySelector('input[name="shTag"]:checked');
+            const tag = tagEl ? tagEl.value : 'none';
             const activeStatus = document.querySelector('#shStatusPicker button.active');
             const status = activeStatus ? activeStatus.dataset.status : 'buy';
             const item = {
@@ -2737,7 +2978,8 @@
             $('qName').value = '';
             $('qBrand').value = '';
             $('qQty').value = 1;
-            document.querySelectorAll('input[name="qTag"]').forEach(r => r.checked = r.value === 'none');
+            $('qTagPicker').dataset.current = 'none';
+            renderTagPickers();
             document.querySelectorAll('#qStatusPicker button').forEach(b => {
                 b.classList.toggle('active', b.dataset.status === 'buy');
             });
@@ -2759,6 +3001,25 @@
             });
         });
 
+        // 快速加入新增標籤
+        $('qAddTagBtn').addEventListener('click', function() {
+            const input = $('qNewTagInput');
+            const val = input.value.trim();
+            if (!val) { showToast('請輸入標籤名稱'); return; }
+            const value = val.toLowerCase().replace(/\s+/g, '_');
+            if (shoppingTags.some(t => t.value === value)) { showToast('標籤已存在'); return; }
+            shoppingTags.push({ value: value, label: val, emoji: '' });
+            saveToFirebase();
+            $('qTagPicker').dataset.current = value;
+            input.value = '';
+            renderTagPickers();
+            renderShoppingFilterBar();
+            showToast('✅ 已加入標籤：' + val);
+        });
+        $('qNewTagInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') $('qAddTagBtn').click();
+        });
+
         $('quickAddSaveBtn').addEventListener('click', function() {
             const name = $('qName').value.trim();
             if (!name) { showToast('請輸入物品名稱'); return; }
@@ -2767,7 +3028,8 @@
                 brands.push(brand);
             }
             const qty = parseInt($('qQty').value) || 1;
-            const tag = document.querySelector('input[name="qTag"]:checked')?.value || 'none';
+            const tagEl = document.querySelector('input[name="qTag"]:checked');
+            const tag = tagEl ? tagEl.value : 'none';
             const activeStatus = document.querySelector('#qStatusPicker button.active');
             const status = activeStatus ? activeStatus.dataset.status : 'buy';
             const item = {
@@ -2823,11 +3085,12 @@
                             <div class="detail-row"><span class="label">庫存狀態</span><span class="value">${usedText}</span></div>
                         `;
             } else if (item.type === 'shopping') {
-                const tagMap = { 'recurring': '🔄 恆常補貨', 'restock': '📦 回購', 'none': '冇標籤' };
+                const tagInfo = shoppingTags.find(t => t.value === item.tag);
+                const tagDisplay = tagInfo ? `${tagInfo.emoji || ''} ${tagInfo.label}` : '冇標籤';
                 const statusMap = { 'none': '⚪ 唔使買', 'soon': '🟡 差唔多', 'buy': '🔴 要買', 'done': '✅ 買咗' };
                 extraRows = `
                             <div class="detail-row"><span class="label">類型</span><span class="value">🛒 購物清單</span></div>
-                            <div class="detail-row"><span class="label">標籤</span><span class="value">${tagMap[item.tag] || '冇標籤'}</span></div>
+                            <div class="detail-row"><span class="label">標籤</span><span class="value">${tagDisplay}</span></div>
                             <div class="detail-row"><span class="label">數量</span><span class="value">${item.qty || 1} 件</span></div>
                             <div class="detail-row"><span class="label">狀態</span><span class="value">${statusMap[item.status] || '⚪ 唔使買'}</span></div>
                         `;
@@ -2868,7 +3131,7 @@
         });
 
         $('exportBtn').addEventListener('click', function() {
-            const data = JSON.stringify({ items: allItems, categories, locations, brands }, null, 2);
+            const data = JSON.stringify({ items: allItems, categories, locations, brands, shoppingTags }, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2896,11 +3159,13 @@
                     if (data.categories) categories = data.categories;
                     if (data.locations) locations = data.locations;
                     if (data.brands) brands = data.brands;
+                    if (data.shoppingTags) shoppingTags = data.shoppingTags;
                     repairCategories();
                     saveToFirebase();
                     renderFilterBar();
                     renderLocationFilterBar();
                     renderSubFilterBar();
+                    renderShoppingFilterBar();
                     populateSelects();
                     renderAll();
                     showToast('✅ 匯入完成！');
@@ -2923,16 +3188,6 @@
                 if (tab === 'shopping') renderShopping();
                 if (tab === 'stats') renderStats();
                 if (tab === 'inventory') renderInventory();
-            });
-        });
-
-        document.querySelectorAll('.shopping-header .left button').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.shopping-header .left button').forEach(b => b.classList.remove(
-                    'active'));
-                this.classList.add('active');
-                currentShopFilter = this.dataset.sfilter;
-                renderShopping();
             });
         });
 
@@ -3034,7 +3289,7 @@
             });
         });
 
-        console.log('🧴 護膚品庫存 App (加入庫存回購功能) 已啟動！');
+        console.log('🧴 護膚品庫存 App (加入自訂標籤) 已啟動！');
     </script>
 
 </body>
